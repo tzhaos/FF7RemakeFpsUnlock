@@ -1,0 +1,36 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -A x64
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force package | Out-Null
+          Copy-Item build/Release/xinput1_3.dll package/
+          Copy-Item FF7RFpsUnlock.ini package/
+          Copy-Item LICENSE package/
+          Compress-Archive -Path package/* -DestinationPath "FF7RemakeFpsUnlock-${{ github.ref_name }}.zip"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: FF7RemakeFpsUnlock-${{ github.ref_name }}.zip
+          generate_release_notes: true
